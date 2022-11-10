@@ -1,24 +1,5 @@
 #pragma once
-
-//statically load vulkan library
-#include <vulkan/vulkan.hpp>
-#include <glfw/glfw3.h>
-
-/*
-* Statically linking the prebuilt header from the lunarg sdk will load
-* most functions, but not all.
-* 
-* Functions can also be dynamically loaded, using the call
-* 
-* PFN_vkVoidFunction vkGetInstanceProcAddr(
-    VkInstance                                  instance,
-    const char*                                 pName);
- or
- PFN_vkVoidFunction vkGetDeviceProcAddr(
-	VkDevice                                    device,
-	const char*                                 pName);
-	We will look at this later, once we've created an instance and device.
-*/
+#include "config.h"
 
 class Engine {
 
@@ -33,11 +14,29 @@ private:
 	//whether to print debug messages in functions
 	bool debugMode = true;
 
-	//glfw window parameters
+	//glfw-related variables
 	int width{ 640 };
 	int height{ 480 };
 	GLFWwindow* window{ nullptr };
 
+	//instance-related variables
+	vk::Instance instance{ nullptr };
+	vk::DebugUtilsMessengerEXT debugMessenger{ nullptr };
+	vk::DispatchLoaderDynamic dldi;
+	vk::SurfaceKHR surface;
+
+	//device-related variables
+	vk::PhysicalDevice physicalDevice{ nullptr };
+	vk::Device device{ nullptr };
+	vk::Queue graphicsQueue{ nullptr };
+	vk::Queue presentQueue{ nullptr };
+
 	//glfw setup
 	void build_glfw_window();
+
+	//instance setup
+	void make_instance();
+
+	//device setup
+	void make_device();
 };
