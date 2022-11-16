@@ -54,14 +54,21 @@ void Engine::Init() {
     VkSurfaceKHR c_style_surface;
 
     glfwCreateWindowSurface(instance, window, nullptr, &c_style_surface);
-
     surface = c_style_surface;
+
+    // device
+    auto physical_devices = instance.enumeratePhysicalDevices();
+    physicalDevice = physical_devices[0];
+
+    std::cout << physicalDevice.getProperties().deviceName << std::endl;
+
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         // glfwMakeContextCurrnet(window);
         glfwSwapBuffers(window);
     }
+
     glfwDestroyWindow(window);
 
     // make_instance();
