@@ -6,6 +6,8 @@ class Engine {
 public:
 
 	Engine();
+    void Init();
+    void Quit();
 
 	~Engine();
 
@@ -20,7 +22,7 @@ private:
 	GLFWwindow* window{ nullptr };
 
 	//instance-related variables
-	vk::Instance instance{ nullptr };
+	vk::Instance instance { nullptr };
 	vk::DebugUtilsMessengerEXT debugMessenger{ nullptr };
 	vk::DispatchLoaderDynamic dldi;
 	vk::SurfaceKHR surface;
