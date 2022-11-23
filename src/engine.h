@@ -13,6 +13,15 @@ public:
 
 private:
 
+    struct QueueFamilyIndices {
+		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> presentFamily;
+
+		bool isComplete() {
+			return graphicsFamily.has_value() && presentFamily.has_value();
+		}
+	};
+
 	//whether to print debug messages in functions
 	bool debugMode = true;
 
@@ -32,6 +41,8 @@ private:
 	vk::Device device{ nullptr };
 	vk::Queue graphicsQueue{ nullptr };
 	vk::Queue presentQueue{ nullptr };
+
+    QueueFamilyIndices queueIndices;
 
 	//glfw setup
 	void build_glfw_window();
