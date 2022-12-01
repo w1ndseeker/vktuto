@@ -116,16 +116,20 @@ void Engine::Init() {
         queueinfos.push_back(dqinfo2);
     }
 
-    std::array<const char *, 1> subset_ext{"VK_KHR_portability_subset"};
+    std::array<const char *, 2> subset_ext{"VK_KHR_portability_subset",
+                                           VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     vk::DeviceCreateInfo deviceinfo;
     deviceinfo.setPEnabledExtensionNames(subset_ext);
     deviceinfo.setQueueCreateInfos(queueinfos);
 
-    device =  physicalDevice.createDevice(deviceinfo);
+    device = physicalDevice.createDevice(deviceinfo);
 
-    graphicsQueue = device.getQueue(queueIndices.graphicsFamily.value(),0);
-    presentQueue = device.getQueue(queueIndices.presentFamily.value(),0);
+    graphicsQueue = device.getQueue(queueIndices.graphicsFamily.value(), 0);
+    presentQueue = device.getQueue(queueIndices.presentFamily.value(), 0);
+
+    // creat swapchain
+    vk::SwapchainCreateInfoKHR swapchaininfo;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();

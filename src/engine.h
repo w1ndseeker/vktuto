@@ -43,6 +43,7 @@ private:
 	vk::Queue presentQueue{ nullptr };
 
     QueueFamilyIndices queueIndices;
+    vk::SwapchainKHR swapchain {nullptr};
 
 	//glfw setup
 	void build_glfw_window();
