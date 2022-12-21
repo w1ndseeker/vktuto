@@ -7,6 +7,7 @@ public:
 
 	Engine();
     void Init();
+    void Run();
     void Quit();
 
 	~Engine();
@@ -22,28 +23,40 @@ private:
 		}
 	};
 
+    struct SwapchainRequiredInfo{
+        vk::SurfaceCapabilitiesKHR capabilities;
+        vk::Extent2D extent;
+        vk::SurfaceFormatKHR format;
+        vk::PresentModeKHR present_mode;
+        uint32_t image_count;
+    };
+
 	//whether to print debug messages in functions
 	bool debugMode = true;
 
 	//glfw-related variables
 	int width{ 640 };
 	int height{ 480 };
-	GLFWwindow* window{ nullptr };
+	GLFWwindow* _window { nullptr };
 
 	//instance-related variables
-	vk::Instance instance { nullptr };
+	vk::Instance _instance { nullptr };
 	vk::DebugUtilsMessengerEXT debugMessenger{ nullptr };
 	vk::DispatchLoaderDynamic dldi;
-	vk::SurfaceKHR surface;
+	vk::SurfaceKHR _surface;
+
+    std::vector<vk::Image> _images;
+    std::vector<vk::ImageView> _imageViews;
 
 	//device-related variables
-	vk::PhysicalDevice physicalDevice{ nullptr };
-	vk::Device device{ nullptr };
-	vk::Queue graphicsQueue{ nullptr };
-	vk::Queue presentQueue{ nullptr };
+	vk::PhysicalDevice _physicalDevice { nullptr };
+	vk::Device _device { nullptr };
+	vk::Queue _graphicsQueue { nullptr };
+	vk::Queue _presentQueue { nullptr };
 
-    QueueFamilyIndices queueIndices;
-    vk::SwapchainKHR swapchain {nullptr};
+    QueueFamilyIndices _queueIndices;
+    SwapchainRequiredInfo _requiredinfo;
+    vk::SwapchainKHR _swapchain {nullptr};
 
 	//glfw setup
 	void build_glfw_window();
@@ -53,4 +66,9 @@ private:
 
 	//device setup
 	void make_device();
+
+	void make_swapchain();
+
+    void make_imageviews();
+
 };
