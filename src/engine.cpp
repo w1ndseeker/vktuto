@@ -25,7 +25,6 @@ void Engine::Init() {
     make_swapchain();
 
     images_ = device_.getSwapchainImagesKHR(swapchain_);
-
 }
 
 void Engine::Run() {
@@ -41,7 +40,7 @@ void Engine::Run() {
 
 void Engine::Quit() {
 
-    for(auto & view : imageViews_){
+    for (auto &view : imageViews_) {
         device_.destroyImageView(view);
     }
 
@@ -52,9 +51,10 @@ void Engine::Quit() {
     // device.destroy();
 }
 
-void Engine::make_imageviews(){
+void Engine::make_imageviews() {
+
     std::vector<vk::ImageView> views(images_.size());
-    for(int i = 0; i < views.size(); ++i){
+    for (int i = 0; i < views.size(); ++i) {
         vk::ImageViewCreateInfo info;
         info.setImage(images_[i]);
         info.setFormat(requiredinfo_.format.format);
@@ -73,7 +73,6 @@ void Engine::make_imageviews(){
     }
 
     imageViews_ = views;
-
 }
 
 void Engine::make_swapchain() {
@@ -139,9 +138,7 @@ void Engine::make_swapchain() {
     createinfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
 
     swapchain_ = device_.createSwapchainKHR(createinfo);
-
 }
-
 
 void Engine::build_glfw_window() {
 
@@ -259,27 +256,4 @@ void Engine::make_device() {
     presentQueue_ = device_.getQueue(queueIndices_.presentFamily.value(), 0);
 }
 
-Engine::~Engine() {
-
-    // if (debugMode) {
-    // 	std::cout << "Goodbye see you!\n";
-    // }
-
-    // device.destroy();
-
-    // instance.destroySurfaceKHR(surface);
-    // if (debugMode) {
-    // 	instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
-    // }
-    /*
-    * from vulkan_funcs.hpp:
-    *
-    * void Instance::destroy( Optional<const
-    VULKAN_HPP_NAMESPACE::AllocationCallbacks> allocator = nullptr, Dispatch
-    const & d = ::vk::getDispatchLoaderStatic())
-    */
-    // instance.destroy();
-
-    // terminate glfw
-    //  glfwTerminate();
-}
+Engine::~Engine() {}
