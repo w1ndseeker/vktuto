@@ -22,43 +22,42 @@ void Engine::Init() {
     build_glfw_window();
     make_instance();
     make_device();
-
     make_swapchain();
 
-    _images = _device.getSwapchainImagesKHR(_swapchain);
+    images_ = device_.getSwapchainImagesKHR(swapchain_);
 
 }
 
 void Engine::Run() {
 
-    while (!glfwWindowShouldClose(_window)) {
+    while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
         // glfwMakeContextCurrnet(window);
-        glfwSwapBuffers(_window);
+        glfwSwapBuffers(window_);
     }
 
-    glfwDestroyWindow(_window);
+    glfwDestroyWindow(window_);
 }
 
 void Engine::Quit() {
 
-    for(auto & view : _imageViews){
-        _device.destroyImageView(view);
+    for(auto & view : imageViews_){
+        device_.destroyImageView(view);
     }
 
-    _device.destroySwapchainKHR(_swapchain);
-    _device.destroy();
-    _instance.destroySurfaceKHR(_surface);
-    _instance.destroy();
+    device_.destroySwapchainKHR(swapchain_);
+    device_.destroy();
+    instance_.destroySurfaceKHR(surface_);
+    instance_.destroy();
     // device.destroy();
 }
 
 void Engine::make_imageviews(){
-    std::vector<vk::ImageView> views(_images.size());
+    std::vector<vk::ImageView> views(images_.size());
     for(int i = 0; i < views.size(); ++i){
         vk::ImageViewCreateInfo info;
-        info.setImage(_images[i]);
-        info.setFormat(_requiredinfo.format.format);
+        info.setImage(images_[i]);
+        info.setFormat(requiredinfo_.format.format);
         info.setViewType(vk::ImageViewType::e2D);
         vk::ImageSubresourceRange range;
         range.setBaseMipLevel(0);
@@ -70,10 +69,10 @@ void Engine::make_imageviews(){
         vk::ComponentMapping mapping;
         info.setComponents(mapping);
 
-        views[i] = _device.createImageView(info);
+        views[i] = device_.createImageView(info);
     }
 
-    _imageViews = views;
+    imageViews_ = views;
 
 }
 
@@ -81,8 +80,8 @@ void Engine::make_swapchain() {
     // creat swapchain
     SwapchainRequiredInfo info;
 
-    info.capabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
-    auto formats = _physicalDevice.getSurfaceFormatsKHR(_surface);
+    info.capabilities = physicalDevice_.getSurfaceCapabilitiesKHR(surface_);
+    auto formats = physicalDevice_.getSurfaceFormatsKHR(surface_);
     info.format = formats[0];
     for (auto &format : formats) {
         if (format.format == vk::Format::eR8G8B8A8Srgb ||
@@ -92,7 +91,7 @@ void Engine::make_swapchain() {
     }
 
     int w, h;
-    glfwGetWindowSize(_window, &w, &h);
+    glfwGetWindowSize(window_, &w, &h);
 
     info.extent.width =
         std::clamp<uint32_t>(w, info.capabilities.minImageExtent.width,
@@ -104,7 +103,7 @@ void Engine::make_swapchain() {
     info.image_count = std::clamp<uint32_t>(2, info.capabilities.minImageCount,
                                             info.capabilities.maxImageCount);
 
-    auto presentModes = _physicalDevice.getSurfacePresentModesKHR(_surface);
+    auto presentModes = physicalDevice_.getSurfacePresentModesKHR(surface_);
     info.present_mode = vk::PresentModeKHR::eFifo;
 
     for (auto &present : presentModes) {
@@ -112,34 +111,34 @@ void Engine::make_swapchain() {
             info.present_mode = present;
         }
     }
-    _requiredinfo = info;
+    requiredinfo_ = info;
 
     vk::SwapchainCreateInfoKHR createinfo;
-    createinfo.setImageColorSpace(_requiredinfo.format.colorSpace);
-    createinfo.setImageFormat(_requiredinfo.format.format);
-    createinfo.setMinImageCount(_requiredinfo.image_count);
-    createinfo.setImageExtent(_requiredinfo.extent);
-    createinfo.setPresentMode(_requiredinfo.present_mode);
-    createinfo.setPreTransform(_requiredinfo.capabilities.currentTransform);
+    createinfo.setImageColorSpace(requiredinfo_.format.colorSpace);
+    createinfo.setImageFormat(requiredinfo_.format.format);
+    createinfo.setMinImageCount(requiredinfo_.image_count);
+    createinfo.setImageExtent(requiredinfo_.extent);
+    createinfo.setPresentMode(requiredinfo_.present_mode);
+    createinfo.setPreTransform(requiredinfo_.capabilities.currentTransform);
 
-    if (_queueIndices.graphicsFamily.value() ==
-        _queueIndices.presentFamily.value()) {
-        createinfo.setQueueFamilyIndices(_queueIndices.graphicsFamily.value());
+    if (queueIndices_.graphicsFamily.value() ==
+        queueIndices_.presentFamily.value()) {
+        createinfo.setQueueFamilyIndices(queueIndices_.graphicsFamily.value());
         createinfo.setImageSharingMode(vk::SharingMode::eExclusive);
     } else {
-        std::array<uint32_t, 2> indices{_queueIndices.graphicsFamily.value(),
-                                        _queueIndices.presentFamily.value()};
+        std::array<uint32_t, 2> indices{queueIndices_.graphicsFamily.value(),
+                                        queueIndices_.presentFamily.value()};
         createinfo.setQueueFamilyIndices(indices);
         createinfo.setImageSharingMode(vk::SharingMode::eConcurrent);
     }
 
     createinfo.setClipped(true);
-    createinfo.setSurface(_surface);
+    createinfo.setSurface(surface_);
     createinfo.setImageArrayLayers(1);
     createinfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
     createinfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
 
-    _swapchain = _device.createSwapchainKHR(createinfo);
+    swapchain_ = device_.createSwapchainKHR(createinfo);
 
 }
 
@@ -154,7 +153,7 @@ void Engine::build_glfw_window() {
     // resizing breaks the swapchain, we'll disable it for now
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    _window = glfwCreateWindow(800, 600, "vulkan demo", nullptr, nullptr);
+    window_ = glfwCreateWindow(800, 600, "vulkan demo", nullptr, nullptr);
 }
 
 void Engine::make_instance() {
@@ -177,23 +176,23 @@ void Engine::make_instance() {
     vk::InstanceCreateInfo info;
     info.setPEnabledExtensionNames(extensions);
     info.setPEnabledLayerNames(layers);
-    _instance = vk::createInstance(info);
-    if (!_instance) {
+    instance_ = vk::createInstance(info);
+    if (!instance_) {
         throw std::runtime_error("instace create failed");
     }
 
     VkSurfaceKHR c_style_surface;
-    glfwCreateWindowSurface(_instance, _window, nullptr, &c_style_surface);
-    _surface = c_style_surface;
+    glfwCreateWindowSurface(instance_, window_, nullptr, &c_style_surface);
+    surface_ = c_style_surface;
 }
 
 void Engine::make_device() {
 
     // device
-    auto physical_devices = _instance.enumeratePhysicalDevices();
-    _physicalDevice = physical_devices[0];
+    auto physical_devices = instance_.enumeratePhysicalDevices();
+    physicalDevice_ = physical_devices[0];
 
-    std::cout << _physicalDevice.getProperties().deviceName << std::endl;
+    std::cout << physicalDevice_.getProperties().deviceName << std::endl;
 
     // // logic device
     // device = vkInit::create_logical_device(physicalDevice, surface,
@@ -204,13 +203,13 @@ void Engine::make_device() {
 
     QueueFamilyIndices indices;
 
-    auto families = _physicalDevice.getQueueFamilyProperties();
+    auto families = physicalDevice_.getQueueFamilyProperties();
     uint32_t idx = 0;
     for (auto &family : families) {
         if (family.queueFlags | vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = idx;
         }
-        if (_physicalDevice.getSurfaceSupportKHR(idx, _surface)) {
+        if (physicalDevice_.getSurfaceSupportKHR(idx, surface_)) {
             indices.presentFamily = idx;
         }
         if (indices.graphicsFamily && indices.presentFamily) {
@@ -218,29 +217,29 @@ void Engine::make_device() {
         }
         idx++;
     }
-    _queueIndices = indices;
+    queueIndices_ = indices;
 
     // create device
     std::vector<vk::DeviceQueueCreateInfo> queueinfos;
 
-    if (_queueIndices.graphicsFamily.value() ==
-        _queueIndices.presentFamily.value()) {
+    if (queueIndices_.graphicsFamily.value() ==
+        queueIndices_.presentFamily.value()) {
         vk::DeviceQueueCreateInfo dqinfo;
         float priority = 1.0;
         dqinfo.setQueuePriorities(priority);
-        dqinfo.setQueueFamilyIndex(_queueIndices.graphicsFamily.value());
+        dqinfo.setQueueFamilyIndex(queueIndices_.graphicsFamily.value());
         dqinfo.setQueueCount(1);
         queueinfos.push_back(dqinfo);
     } else {
         vk::DeviceQueueCreateInfo dqinfo1;
         float priority = 1.0;
         dqinfo1.setQueuePriorities(priority);
-        dqinfo1.setQueueFamilyIndex(_queueIndices.graphicsFamily.value());
+        dqinfo1.setQueueFamilyIndex(queueIndices_.graphicsFamily.value());
         dqinfo1.setQueueCount(1);
 
         vk::DeviceQueueCreateInfo dqinfo2;
         dqinfo2.setQueuePriorities(priority);
-        dqinfo2.setQueueFamilyIndex(_queueIndices.presentFamily.value());
+        dqinfo2.setQueueFamilyIndex(queueIndices_.presentFamily.value());
         dqinfo2.setQueueCount(1);
 
         queueinfos.push_back(dqinfo1);
@@ -254,10 +253,10 @@ void Engine::make_device() {
     deviceinfo.setPEnabledExtensionNames(subset_ext);
     deviceinfo.setQueueCreateInfos(queueinfos);
 
-    _device = _physicalDevice.createDevice(deviceinfo);
+    device_ = physicalDevice_.createDevice(deviceinfo);
 
-    _graphicsQueue = _device.getQueue(_queueIndices.graphicsFamily.value(), 0);
-    _presentQueue = _device.getQueue(_queueIndices.presentFamily.value(), 0);
+    graphicsQueue_ = device_.getQueue(queueIndices_.graphicsFamily.value(), 0);
+    presentQueue_ = device_.getQueue(queueIndices_.presentFamily.value(), 0);
 }
 
 Engine::~Engine() {

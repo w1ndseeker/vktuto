@@ -37,26 +37,26 @@ private:
 	//glfw-related variables
 	int width{ 640 };
 	int height{ 480 };
-	GLFWwindow* _window { nullptr };
+	GLFWwindow* window_ { nullptr };
 
 	//instance-related variables
-	vk::Instance _instance { nullptr };
+	vk::Instance instance_ { nullptr };
 	vk::DebugUtilsMessengerEXT debugMessenger{ nullptr };
 	vk::DispatchLoaderDynamic dldi;
-	vk::SurfaceKHR _surface;
+	vk::SurfaceKHR surface_;
 
-    std::vector<vk::Image> _images;
-    std::vector<vk::ImageView> _imageViews;
+    std::vector<vk::Image> images_;
+    std::vector<vk::ImageView> imageViews_;
 
 	//device-related variables
-	vk::PhysicalDevice _physicalDevice { nullptr };
-	vk::Device _device { nullptr };
-	vk::Queue _graphicsQueue { nullptr };
-	vk::Queue _presentQueue { nullptr };
+	vk::PhysicalDevice physicalDevice_ { nullptr };
+	vk::Device device_ { nullptr };
+	vk::Queue graphicsQueue_ { nullptr };
+	vk::Queue presentQueue_ { nullptr };
 
-    QueueFamilyIndices _queueIndices;
-    SwapchainRequiredInfo _requiredinfo;
-    vk::SwapchainKHR _swapchain {nullptr};
+    QueueFamilyIndices queueIndices_;
+    SwapchainRequiredInfo requiredinfo_;
+    vk::SwapchainKHR swapchain_ {nullptr};
 
 	//glfw setup
 	void build_glfw_window();
