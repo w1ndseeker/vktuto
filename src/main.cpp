@@ -8,7 +8,7 @@ int main() {
     auto vertexShader = graphicsEngine->CreateShaderModule("../shader/vert.spv");
     auto fragShader = graphicsEngine->CreateShaderModule("../shader/frag.spv");
 
-    graphicsEngine->CreatePipiline(vertexShader,fragShader);
+    graphicsEngine->CreatePipeline(vertexShader,fragShader);
 
     graphicsEngine->Run();
     graphicsEngine->Quit();

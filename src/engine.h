@@ -10,7 +10,7 @@ class Engine {
     void Init();
     void Run();
     void Quit();
-    void CreatePipiline(vk::ShaderModule vertexShader,vk::ShaderModule fragShader);
+    void CreatePipeline(vk::ShaderModule vertexShader,vk::ShaderModule fragShader);
     vk::ShaderModule CreateShaderModule(const char * filename);
 
   private:
@@ -61,6 +61,8 @@ class Engine {
     vk::Pipeline pipeline_;
     vk::PipelineLayout layout_;
 
+    vk::RenderPass renderpass_;
+
     std::vector<vk::ShaderModule> shaderModules_;
 
     // glfw setup
@@ -75,4 +77,6 @@ class Engine {
     void make_swapchain();
 
     void make_imageviews();
+
+    void create_renderpass();
 };

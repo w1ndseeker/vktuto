@@ -25,6 +25,8 @@ void Engine::Init() {
     make_swapchain();
 
     images_ = device_.getSwapchainImagesKHR(swapchain_);
+
+    create_renderpass();
 }
 
 void Engine::Run() {
@@ -40,6 +42,7 @@ void Engine::Run() {
 
 void Engine::Quit() {
 
+    device_.destroyRenderPass(renderpass_);
     device_.destroyPipelineLayout(layout_);
     device_.destroyPipeline(pipeline_);
 
@@ -263,7 +266,7 @@ void Engine::make_device() {
     presentQueue_ = device_.getQueue(queueIndices_.presentFamily.value(), 0);
 }
 
-void Engine::CreatePipiline(vk::ShaderModule vertexShader,
+void Engine::CreatePipeline(vk::ShaderModule vertexShader,
                             vk::ShaderModule fragShader) {
 
     vk::GraphicsPipelineCreateInfo info;
@@ -332,7 +335,36 @@ void Engine::CreatePipiline(vk::ShaderModule vertexShader,
 
     info.setPColorBlendState(&colorBlend);
 
+    info.setRenderPass(renderpass_);
+
     pipeline_ = device_.createGraphicsPipeline(nullptr, info).value;
+}
+
+void Engine::create_renderpass(){
+    vk::RenderPassCreateInfo info;
+
+    vk::AttachmentDescription attachDesc;
+    attachDesc.setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setFormat(requiredinfo_.format.format)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+    info.setAttachments(attachDesc);
+
+    vk::SubpassDescription subpassDesc;
+    vk::AttachmentReference refer;
+    refer.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+    refer.setAttachment(0);
+    subpassDesc.setColorAttachments(refer);
+
+    info.setSubpasses(subpassDesc);
+
+    renderpass_ = device_.createRenderPass(info);
+
 }
 
 vk::ShaderModule Engine::CreateShaderModule(const char *filename) {
