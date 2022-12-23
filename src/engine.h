@@ -5,8 +5,8 @@
 class Engine {
 
   public:
-    Engine();
-    ~Engine();
+    Engine() = default;
+    ~Engine() = default;
     void Init();
     void Run();
     void Quit();

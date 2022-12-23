@@ -4,19 +4,6 @@
 #include "logging.h"
 #include <algorithm>
 
-Engine::Engine() {
-
-    // if (debugMode) {
-    // 	std::cout << "Making a graphics engine\n";
-    // }
-
-    // build_glfw_window();
-
-    // make_instance();
-
-    // make_device();
-}
-
 void Engine::Init() {
 
     build_glfw_window();
@@ -359,7 +346,8 @@ void Engine::create_renderpass(){
     vk::AttachmentReference refer;
     refer.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
     refer.setAttachment(0);
-    subpassDesc.setColorAttachments(refer);
+    subpassDesc.setColorAttachments(refer)
+               .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
 
     info.setSubpasses(subpassDesc);
 
@@ -379,5 +367,3 @@ vk::ShaderModule Engine::CreateShaderModule(const char *filename) {
     shaderModules_.push_back(device_.createShaderModule(info));
     return shaderModules_.back();
 }
-
-Engine::~Engine() {}
