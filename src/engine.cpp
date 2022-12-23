@@ -40,6 +40,13 @@ void Engine::Run() {
 
 void Engine::Quit() {
 
+    device_.destroyPipelineLayout(layout_);
+    device_.destroyPipeline(pipeline_);
+
+    for (auto &shader : shaderModules_) {
+        device_.destroyShaderModule(shader);
+    }
+
     for (auto &view : imageViews_) {
         device_.destroyImageView(view);
     }
@@ -254,6 +261,91 @@ void Engine::make_device() {
 
     graphicsQueue_ = device_.getQueue(queueIndices_.graphicsFamily.value(), 0);
     presentQueue_ = device_.getQueue(queueIndices_.presentFamily.value(), 0);
+}
+
+void Engine::CreatePipiline(vk::ShaderModule vertexShader,
+                            vk::ShaderModule fragShader) {
+
+    vk::GraphicsPipelineCreateInfo info;
+    // info.setPVertexInputState();
+    // info.setPInputAssemblyState();
+
+    std::array<vk::PipelineShaderStageCreateInfo, 2> stageInfos;
+    stageInfos[0]
+        .setModule(vertexShader)
+        .setStage(vk::ShaderStageFlagBits::eVertex)
+        .setPName("main");
+
+    stageInfos[1]
+        .setModule(fragShader)
+        .setStage(vk::ShaderStageFlagBits::eFragment)
+        .setPName("main");
+
+    info.setStages(stageInfos);
+
+    vk::PipelineVertexInputStateCreateInfo vertexInput;
+    info.setPVertexInputState(&vertexInput);
+
+    vk::PipelineInputAssemblyStateCreateInfo inputAsm;
+    inputAsm.setPrimitiveRestartEnable(false).setTopology(
+        vk::PrimitiveTopology::eTriangleList);
+
+    info.setPInputAssemblyState(&inputAsm);
+
+    vk::PipelineLayoutCreateInfo layoutInfo;
+    layout_ = device_.createPipelineLayout(layoutInfo);
+
+    info.setLayout(layout_);
+
+    vk::PipelineViewportStateCreateInfo viewportInfo;
+    vk::Viewport viewport(0, 0, requiredinfo_.extent.width,
+                          requiredinfo_.extent.height, 0, 1);
+
+    vk::Rect2D scissor({0, 0}, requiredinfo_.extent);
+    viewportInfo.setViewports(viewport).setScissors(scissor);
+
+    info.setPViewportState(&viewportInfo);
+
+    vk::PipelineRasterizationStateCreateInfo rastInfo;
+    rastInfo.setRasterizerDiscardEnable(false)
+        .setDepthClampEnable(false)
+        .setDepthBiasEnable(false)
+        .setLineWidth(1)
+        .setCullMode(vk::CullModeFlagBits::eNone)
+        .setPolygonMode(vk::PolygonMode::eFill);
+    info.setPRasterizationState(&rastInfo);
+
+    vk::PipelineMultisampleStateCreateInfo multisample;
+    multisample.setSampleShadingEnable(false).setRasterizationSamples(
+        vk::SampleCountFlagBits::e1);
+
+    info.setPMultisampleState(&multisample);
+
+    info.setPDepthStencilState(nullptr);
+
+    vk::PipelineColorBlendStateCreateInfo colorBlend;
+    vk::PipelineColorBlendAttachmentState atBlendState;
+    atBlendState.setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+        vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+    colorBlend.setLogicOpEnable(false).setAttachments(atBlendState);
+
+    info.setPColorBlendState(&colorBlend);
+
+    pipeline_ = device_.createGraphicsPipeline(nullptr, info).value;
+}
+
+vk::ShaderModule Engine::CreateShaderModule(const char *filename) {
+    std::ifstream file(filename, std::ios::binary | std::ios::in);
+    std::vector<char> content((std::istreambuf_iterator<char>(file)),
+                              std::istreambuf_iterator<char>());
+    file.close();
+    vk::ShaderModuleCreateInfo info;
+    info.pCode = (uint32_t *)content.data();
+    info.codeSize = content.size();
+
+    shaderModules_.push_back(device_.createShaderModule(info));
+    return shaderModules_.back();
 }
 
 Engine::~Engine() {}

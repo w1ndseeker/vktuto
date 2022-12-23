@@ -1,15 +1,17 @@
 #pragma once
 #include "config.h"
+#include <fstream>
 
 class Engine {
 
   public:
     Engine();
+    ~Engine();
     void Init();
     void Run();
     void Quit();
-
-    ~Engine();
+    void CreatePipiline(vk::ShaderModule vertexShader,vk::ShaderModule fragShader);
+    vk::ShaderModule CreateShaderModule(const char * filename);
 
   private:
     struct QueueFamilyIndices {
@@ -55,6 +57,11 @@ class Engine {
     QueueFamilyIndices queueIndices_;
     SwapchainRequiredInfo requiredinfo_;
     vk::SwapchainKHR swapchain_{nullptr};
+
+    vk::Pipeline pipeline_;
+    vk::PipelineLayout layout_;
+
+    std::vector<vk::ShaderModule> shaderModules_;
 
     // glfw setup
     void build_glfw_window();
