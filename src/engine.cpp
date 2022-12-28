@@ -240,12 +240,12 @@ void Engine::make_device() {
         queueinfos.push_back(dqinfo2);
     }
 
-    #ifdef __APPLE__
+#ifdef __APPLE__
     std::array<const char *, 2> subset_ext{"VK_KHR_portability_subset",
                                            VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    #elif defined _WIN32
-        std::array<const char *, 1> subset_ext{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    #endif
+#elif defined _WIN32
+    std::array<const char *, 1> subset_ext{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+#endif
 
     vk::DeviceCreateInfo deviceinfo;
     deviceinfo.setPEnabledExtensionNames(subset_ext);
