@@ -242,7 +242,7 @@ void Engine::make_device() {
 #ifdef __APPLE__
     std::array<const char *, 2> subset_ext{"VK_KHR_portability_subset",
                                            VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-#elif defined _WIN32
+#else
     std::array<const char *, 1> subset_ext{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 #endif
 
