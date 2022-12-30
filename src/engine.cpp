@@ -140,7 +140,6 @@ void Engine::make_swapchain() {
 void Engine::build_glfw_window() {
 
     glfwInit();
-
     // no default rendering client, we'll hook vulkan up
     // to the window later
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -356,6 +355,20 @@ void Engine::create_renderpass(){
     info.setSubpasses(subpassDesc);
 
     renderpass_ = device_.createRenderPass(info);
+
+}
+
+void Engine::create_framebuffers(){
+
+    for(int i = 0; i < imageViews_.size();++i){
+        vk::FramebufferCreateInfo info;
+        info.setRenderPass(renderpass_)
+            .setLayers(1)
+            .setWidth(requiredinfo_.extent.width)
+            .setHeight(requiredinfo_.extent.height)
+            .setAttachments(imageViews_[i]);
+        framebuffers_.push_back(device_.createFramebuffer(info));
+    }
 
 }
 

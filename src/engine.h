@@ -65,6 +65,8 @@ class Engine {
 
     std::vector<vk::ShaderModule> shaderModules_;
 
+    std::vector<vk::Framebuffer> framebuffers_;
+
     // glfw setup
     void build_glfw_window();
 
@@ -79,4 +81,6 @@ class Engine {
     void make_imageviews();
 
     void create_renderpass();
+
+    void create_framebuffers();
 };
