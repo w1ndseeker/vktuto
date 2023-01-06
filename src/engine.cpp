@@ -11,16 +11,21 @@ void Engine::Init() {
     make_device();
     make_swapchain();
 
-    images_ = device_.getSwapchainImagesKHR(swapchain_);
-
+    make_imageviews();
     create_renderpass();
 }
 
 void Engine::Run() {
 
+    create_framebuffers();
+    create_commandpool();
+    allocate_commandbuffer();
+    create_sems();
+    create_fence();
+
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
-        // glfwMakeContextCurrnet(window);
+        render();
         glfwSwapBuffers(window_);
     }
 
@@ -28,6 +33,16 @@ void Engine::Run() {
 }
 
 void Engine::Quit() {
+
+    device_.destroySemaphore(imageAvaliable_);
+    device_.destroySemaphore(imageDrawFinish_);
+    device_.destroyFence(cmdAvaliableFence_);
+    device_.freeCommandBuffers(commandPool_, cmdBuf_);
+    device_.destroyCommandPool(commandPool_);
+
+    for(auto& framebuffer : framebuffers_){
+        device_.destroyFramebuffer(framebuffer);
+    }
 
     device_.destroyRenderPass(renderpass_);
     device_.destroyPipelineLayout(layout_);
@@ -53,18 +68,17 @@ void Engine::make_imageviews() {
     std::vector<vk::ImageView> views(images_.size());
     for (int i = 0; i < views.size(); ++i) {
         vk::ImageViewCreateInfo info;
-        info.setImage(images_[i]);
-        info.setFormat(requiredinfo_.format.format);
-        info.setViewType(vk::ImageViewType::e2D);
+        info.setImage(images_[i])
+            .setFormat(requiredinfo_.format.format)
+            .setViewType(vk::ImageViewType::e2D);
         vk::ImageSubresourceRange range;
-        range.setBaseMipLevel(0);
-        range.setLevelCount(1);
-        range.setBaseArrayLayer(0);
-        range.setLayerCount(1);
-        range.setAspectMask(vk::ImageAspectFlagBits::eColor);
-        info.setSubresourceRange(range);
+        range.setBaseMipLevel(0)
+            .setLevelCount(1)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1)
+            .setAspectMask(vk::ImageAspectFlagBits::eColor);
         vk::ComponentMapping mapping;
-        info.setComponents(mapping);
+        info.setSubresourceRange(range).setComponents(mapping);
 
         views[i] = device_.createImageView(info);
     }
@@ -110,31 +124,33 @@ void Engine::make_swapchain() {
     requiredinfo_ = info;
 
     vk::SwapchainCreateInfoKHR createinfo;
-    createinfo.setImageColorSpace(requiredinfo_.format.colorSpace);
-    createinfo.setImageFormat(requiredinfo_.format.format);
-    createinfo.setMinImageCount(requiredinfo_.image_count);
-    createinfo.setImageExtent(requiredinfo_.extent);
-    createinfo.setPresentMode(requiredinfo_.present_mode);
-    createinfo.setPreTransform(requiredinfo_.capabilities.currentTransform);
+    createinfo.setImageColorSpace(requiredinfo_.format.colorSpace)
+        .setImageFormat(requiredinfo_.format.format)
+        .setMinImageCount(requiredinfo_.image_count)
+        .setImageExtent(requiredinfo_.extent)
+        .setPresentMode(requiredinfo_.present_mode)
+        .setPreTransform(requiredinfo_.capabilities.currentTransform);
 
     if (queueIndices_.graphicsFamily.value() ==
         queueIndices_.presentFamily.value()) {
-        createinfo.setQueueFamilyIndices(queueIndices_.graphicsFamily.value());
-        createinfo.setImageSharingMode(vk::SharingMode::eExclusive);
+        createinfo.setQueueFamilyIndices(queueIndices_.graphicsFamily.value())
+            .setImageSharingMode(vk::SharingMode::eExclusive);
     } else {
         std::array<uint32_t, 2> indices{queueIndices_.graphicsFamily.value(),
                                         queueIndices_.presentFamily.value()};
-        createinfo.setQueueFamilyIndices(indices);
-        createinfo.setImageSharingMode(vk::SharingMode::eConcurrent);
+        createinfo.setQueueFamilyIndices(indices).setImageSharingMode(
+            vk::SharingMode::eConcurrent);
     }
 
-    createinfo.setClipped(true);
-    createinfo.setSurface(surface_);
-    createinfo.setImageArrayLayers(1);
-    createinfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
-    createinfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
+    createinfo.setClipped(true)
+        .setSurface(surface_)
+        .setImageArrayLayers(1)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
 
     swapchain_ = device_.createSwapchainKHR(createinfo);
+    images_ = device_.getSwapchainImagesKHR(swapchain_);
+
 }
 
 void Engine::build_glfw_window() {
@@ -186,14 +202,6 @@ void Engine::make_device() {
     physicalDevice_ = physical_devices[0];
 
     std::cout << physicalDevice_.getProperties().deviceName << std::endl;
-
-    // // logic device
-    // device = vkInit::create_logical_device(physicalDevice, surface,
-    // debugMode); std::array<vk::Queue, 2> queues =
-    //     vkInit::get_queues(physicalDevice, device, surface, debugMode);
-    // graphicsQueue = queues[0];
-    // presentQueue = queues[1];
-
     QueueFamilyIndices indices;
 
     auto families = physicalDevice_.getQueueFamilyProperties();
@@ -219,21 +227,21 @@ void Engine::make_device() {
         queueIndices_.presentFamily.value()) {
         vk::DeviceQueueCreateInfo dqinfo;
         float priority = 1.0;
-        dqinfo.setQueuePriorities(priority);
-        dqinfo.setQueueFamilyIndex(queueIndices_.graphicsFamily.value());
-        dqinfo.setQueueCount(1);
+        dqinfo.setQueuePriorities(priority)
+            .setQueueFamilyIndex(queueIndices_.graphicsFamily.value())
+            .setQueueCount(1);
         queueinfos.push_back(dqinfo);
     } else {
         vk::DeviceQueueCreateInfo dqinfo1;
         float priority = 1.0;
-        dqinfo1.setQueuePriorities(priority);
-        dqinfo1.setQueueFamilyIndex(queueIndices_.graphicsFamily.value());
-        dqinfo1.setQueueCount(1);
+        dqinfo1.setQueuePriorities(priority)
+            .setQueueFamilyIndex(queueIndices_.graphicsFamily.value())
+            .setQueueCount(1);
 
         vk::DeviceQueueCreateInfo dqinfo2;
-        dqinfo2.setQueuePriorities(priority);
-        dqinfo2.setQueueFamilyIndex(queueIndices_.presentFamily.value());
-        dqinfo2.setQueueCount(1);
+        dqinfo2.setQueuePriorities(priority)
+            .setQueueFamilyIndex(queueIndices_.presentFamily.value())
+            .setQueueCount(1);
 
         queueinfos.push_back(dqinfo1);
         queueinfos.push_back(dqinfo2);
@@ -300,12 +308,12 @@ void Engine::CreatePipeline(vk::ShaderModule vertexShader,
     info.setPViewportState(&viewportInfo);
 
     vk::PipelineRasterizationStateCreateInfo rastInfo;
-    rastInfo.setRasterizerDiscardEnable(false)
+    rastInfo.setCullMode(vk::CullModeFlagBits::eFront)
+        .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthClampEnable(false)
-        .setDepthBiasEnable(false)
         .setLineWidth(1)
-        .setCullMode(vk::CullModeFlagBits::eNone)
-        .setPolygonMode(vk::PolygonMode::eFill);
+        .setPolygonMode(vk::PolygonMode::eFill)
+        .setRasterizerDiscardEnable(false);
     info.setPRasterizationState(&rastInfo);
 
     vk::PipelineMultisampleStateCreateInfo multisample;
@@ -330,7 +338,7 @@ void Engine::CreatePipeline(vk::ShaderModule vertexShader,
     pipeline_ = device_.createGraphicsPipeline(nullptr, info).value;
 }
 
-void Engine::create_renderpass(){
+void Engine::create_renderpass() {
     vk::RenderPassCreateInfo info;
 
     vk::AttachmentDescription attachDesc;
@@ -349,18 +357,17 @@ void Engine::create_renderpass(){
     vk::AttachmentReference refer;
     refer.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
     refer.setAttachment(0);
-    subpassDesc.setColorAttachments(refer)
-               .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
+    subpassDesc.setColorAttachments(refer).setPipelineBindPoint(
+        vk::PipelineBindPoint::eGraphics);
 
     info.setSubpasses(subpassDesc);
 
     renderpass_ = device_.createRenderPass(info);
-
 }
 
-void Engine::create_framebuffers(){
+void Engine::create_framebuffers() {
 
-    for(int i = 0; i < imageViews_.size();++i){
+    for (int i = 0; i < imageViews_.size(); ++i) {
         vk::FramebufferCreateInfo info;
         info.setRenderPass(renderpass_)
             .setLayers(1)
@@ -369,6 +376,93 @@ void Engine::create_framebuffers(){
             .setAttachments(imageViews_[i]);
         framebuffers_.push_back(device_.createFramebuffer(info));
     }
+}
+
+void Engine::create_commandpool() {
+    vk::CommandPoolCreateInfo info;
+    info.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+    commandPool_ = device_.createCommandPool(info);
+}
+
+void Engine::allocate_commandbuffer() {
+    vk::CommandBufferAllocateInfo info;
+    info.setCommandPool(commandPool_)
+        .setCommandBufferCount(1)
+        .setLevel(vk::CommandBufferLevel::ePrimary);
+
+    cmdBuf_ = device_.allocateCommandBuffers(info)[0];
+}
+
+void Engine::render() {
+
+    auto result = device_.acquireNextImageKHR(
+        swapchain_, std::numeric_limits<uint64_t>::max());
+
+    if (result.result != vk::Result::eSuccess) {
+        std::cout << "aquire next image failed!" << std::endl;
+    }
+
+    auto imageIndex = result.value;
+    cmdBuf_.reset();
+
+    vk::CommandBufferBeginInfo begin_info;
+    begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    cmdBuf_.begin(begin_info);
+
+    vk::ClearValue clearValue;
+    clearValue.setColor(vk::ClearColorValue(std::array<float, 4>{0.1, 0.1, 0.1, 1}));
+    vk::RenderPassBeginInfo renderPassBegin;
+    renderPassBegin.setRenderPass(renderpass_)
+                   .setFramebuffer(framebuffers_[imageIndex])
+                   .setClearValues(clearValue)
+                   .setRenderArea(vk::Rect2D({}, vk::Extent2D(requiredinfo_.extent.width,requiredinfo_.extent.height)));
+
+    cmdBuf_.beginRenderPass(renderPassBegin,{});
+    // cmdBuf_.beginRenderPass(renderPassBegin, {});
+    cmdBuf_.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
+    cmdBuf_.draw(3,1,0,0);
+    cmdBuf_.endRenderPass();
+
+    cmdBuf_.end();
+
+    vk::SubmitInfo submit_info;
+    submit_info.setCommandBuffers(cmdBuf_)
+               .setWaitSemaphores(imageAvaliable_)
+               .setSignalSemaphores(imageDrawFinish_);
+    graphicsQueue_.submit(submit_info, cmdAvaliableFence_);
+
+    auto wait_ret = device_.waitForFences(cmdAvaliableFence_, true,
+                                          std::numeric_limits<uint64_t>::max());
+    if (wait_ret != vk::Result::eSuccess) {
+        std::cout << "Fence wait failed!" << std::endl;
+    }
+
+    device_.resetFences(cmdAvaliableFence_);
+
+    vk::PresentInfoKHR present_info;
+    present_info.setImageIndices(imageIndex)
+                .setSwapchains(swapchain_)
+                .setWaitSemaphores(imageDrawFinish_);
+
+    auto ret = presentQueue_.presentKHR(present_info);
+
+    if (ret != vk::Result::eSuccess) {
+        std::cout << "present failed!" << std::endl;
+    }
+
+
+}
+
+void Engine::create_fence() {
+    vk::FenceCreateInfo info;
+    cmdAvaliableFence_ = device_.createFence(info);
+    // info.setFlags(vk::FenceCreateFlagBits::eSignaled)
+}
+
+void Engine::create_sems() {
+    vk::SemaphoreCreateInfo info;
+    imageAvaliable_ = device_.createSemaphore(info);
+    imageDrawFinish_ = device_.createSemaphore(info);
 
 }
 

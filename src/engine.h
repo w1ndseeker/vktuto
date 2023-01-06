@@ -63,9 +63,19 @@ class Engine {
 
     vk::RenderPass renderpass_;
 
+    vk::CommandBuffer cmdBuf_;
+
+    vk::CommandPool commandPool_;
+
     std::vector<vk::ShaderModule> shaderModules_;
 
     std::vector<vk::Framebuffer> framebuffers_;
+
+    vk::Fence cmdAvaliableFence_;
+
+    vk::Semaphore imageAvaliable_;
+    vk::Semaphore imageDrawFinish_;
+
 
     // glfw setup
     void build_glfw_window();
@@ -83,4 +93,14 @@ class Engine {
     void create_renderpass();
 
     void create_framebuffers();
+
+    void create_commandpool();
+
+    void create_fence();
+
+    void allocate_commandbuffer();
+
+    void create_sems();
+
+    void render();
 };
