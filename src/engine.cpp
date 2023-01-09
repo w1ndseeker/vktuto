@@ -3,6 +3,7 @@
 #include "instance.h"
 #include "logging.h"
 #include <algorithm>
+#include <vulkan/vulkan.h>
 
 void Engine::Init() {
 
@@ -26,7 +27,7 @@ void Engine::Run() {
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
         render();
-        glfwSwapBuffers(window_);
+        // glfwSwapBuffers(window_);
     }
 
     glfwDestroyWindow(window_);
@@ -34,6 +35,7 @@ void Engine::Run() {
 
 void Engine::Quit() {
 
+    device_.waitIdle();
     device_.destroySemaphore(imageAvaliable_);
     device_.destroySemaphore(imageDrawFinish_);
     device_.destroyFence(cmdAvaliableFence_);
@@ -178,6 +180,7 @@ void Engine::make_instance() {
     }
 
     extensions.push_back("VK_KHR_get_physical_device_properties2");
+    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
     // validation layers
     std::array<const char *, 1> layers{"VK_LAYER_KHRONOS_validation"};
@@ -185,6 +188,8 @@ void Engine::make_instance() {
     vk::InstanceCreateInfo info;
     info.setPEnabledExtensionNames(extensions);
     info.setPEnabledLayerNames(layers);
+    info.setFlags(vk::InstanceCreateFlags(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR));
+
     instance_ = vk::createInstance(info);
     if (!instance_) {
         throw std::runtime_error("instace create failed");
@@ -396,7 +401,7 @@ void Engine::allocate_commandbuffer() {
 void Engine::render() {
 
     auto result = device_.acquireNextImageKHR(
-        swapchain_, std::numeric_limits<uint64_t>::max());
+        swapchain_, std::numeric_limits<uint64_t>::max(),imageAvaliable_);
 
     if (result.result != vk::Result::eSuccess) {
         std::cout << "aquire next image failed!" << std::endl;
@@ -418,12 +423,13 @@ void Engine::render() {
                    .setRenderArea(vk::Rect2D({}, vk::Extent2D(requiredinfo_.extent.width,requiredinfo_.extent.height)));
 
     cmdBuf_.beginRenderPass(renderPassBegin,{});
-    // cmdBuf_.beginRenderPass(renderPassBegin, {});
     cmdBuf_.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
     cmdBuf_.draw(3,1,0,0);
     cmdBuf_.endRenderPass();
 
     cmdBuf_.end();
+
+    device_.resetFences(cmdAvaliableFence_);
 
     vk::SubmitInfo submit_info;
     submit_info.setCommandBuffers(cmdBuf_)
@@ -436,8 +442,6 @@ void Engine::render() {
     if (wait_ret != vk::Result::eSuccess) {
         std::cout << "Fence wait failed!" << std::endl;
     }
-
-    device_.resetFences(cmdAvaliableFence_);
 
     vk::PresentInfoKHR present_info;
     present_info.setImageIndices(imageIndex)
@@ -455,8 +459,8 @@ void Engine::render() {
 
 void Engine::create_fence() {
     vk::FenceCreateInfo info;
+    // info.setFlags(vk::FenceCreateFlagBits::eSignaled);
     cmdAvaliableFence_ = device_.createFence(info);
-    // info.setFlags(vk::FenceCreateFlagBits::eSignaled)
 }
 
 void Engine::create_sems() {
