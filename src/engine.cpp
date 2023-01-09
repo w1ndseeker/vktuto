@@ -180,7 +180,9 @@ void Engine::make_instance() {
     }
 
     extensions.push_back("VK_KHR_get_physical_device_properties2");
-    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+
+
+
 
     // validation layers
     std::array<const char *, 1> layers{"VK_LAYER_KHRONOS_validation"};
@@ -188,7 +190,12 @@ void Engine::make_instance() {
     vk::InstanceCreateInfo info;
     info.setPEnabledExtensionNames(extensions);
     info.setPEnabledLayerNames(layers);
+
+#ifdef __APPLE__
+    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     info.setFlags(vk::InstanceCreateFlags(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR));
+#endif
+
 
     instance_ = vk::createInstance(info);
     if (!instance_) {
@@ -432,9 +439,14 @@ void Engine::render() {
     device_.resetFences(cmdAvaliableFence_);
 
     vk::SubmitInfo submit_info;
+
+    std::array<vk::PipelineStageFlags,1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+
     submit_info.setCommandBuffers(cmdBuf_)
                .setWaitSemaphores(imageAvaliable_)
-               .setSignalSemaphores(imageDrawFinish_);
+               .setSignalSemaphores(imageDrawFinish_)
+               .setWaitDstStageMask(waitStages);
+
     graphicsQueue_.submit(submit_info, cmdAvaliableFence_);
 
     auto wait_ret = device_.waitForFences(cmdAvaliableFence_, true,
