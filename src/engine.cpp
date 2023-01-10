@@ -181,21 +181,17 @@ void Engine::make_instance() {
 
     extensions.push_back("VK_KHR_get_physical_device_properties2");
 
-
-
-
     // validation layers
     std::array<const char *, 1> layers{"VK_LAYER_KHRONOS_validation"};
-
     vk::InstanceCreateInfo info;
-    info.setPEnabledExtensionNames(extensions);
-    info.setPEnabledLayerNames(layers);
 
 #ifdef __APPLE__
     extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     info.setFlags(vk::InstanceCreateFlags(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR));
 #endif
 
+    info.setPEnabledExtensionNames(extensions);
+    info.setPEnabledLayerNames(layers);
 
     instance_ = vk::createInstance(info);
     if (!instance_) {
