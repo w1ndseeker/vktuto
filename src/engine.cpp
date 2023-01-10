@@ -1,7 +1,4 @@
 #include "engine.h"
-#include "device.h"
-#include "instance.h"
-#include "logging.h"
 #include <algorithm>
 #include <limits>
 #include <vulkan/vulkan.h>
