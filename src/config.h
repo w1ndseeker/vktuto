@@ -21,7 +21,11 @@
 	We will look at this later, once we've created an instance and device.
 */
 
-#include <glfw/glfw3.h>
+#ifdef __linux__
+    #include <GLFW/glfw3.h>
+#else
+    #include <glfw/glfw3.h>
+#endif
 
 #include <iostream>
 #include <vector>

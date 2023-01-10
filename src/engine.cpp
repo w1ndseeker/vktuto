@@ -3,6 +3,7 @@
 #include "instance.h"
 #include "logging.h"
 #include <algorithm>
+#include <limits>
 #include <vulkan/vulkan.h>
 
 void Engine::Init() {
@@ -436,7 +437,7 @@ void Engine::render() {
 
     vk::SubmitInfo submit_info;
 
-    std::array<vk::PipelineStageFlags,1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    vk::PipelineStageFlags waitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
     submit_info.setCommandBuffers(cmdBuf_)
                .setWaitSemaphores(imageAvaliable_)
@@ -467,7 +468,7 @@ void Engine::render() {
 
 void Engine::create_fence() {
     vk::FenceCreateInfo info;
-    // info.setFlags(vk::FenceCreateFlagBits::eSignaled);
+    info.setFlags(vk::FenceCreateFlagBits::eSignaled);
     cmdAvaliableFence_ = device_.createFence(info);
 }
 
