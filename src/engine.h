@@ -63,7 +63,7 @@ class Engine {
 
     vk::RenderPass renderpass_;
 
-    vk::CommandBuffer cmdBuf_;
+    std::vector<vk::CommandBuffer> cmdBuf_;
 
     vk::CommandPool commandPool_;
 
@@ -71,11 +71,13 @@ class Engine {
 
     std::vector<vk::Framebuffer> framebuffers_;
 
-    vk::Fence cmdAvaliableFence_;
+    std::vector<vk::Fence> fences_;
 
-    vk::Semaphore imageAvaliable_;
-    vk::Semaphore imageDrawFinish_;
+    std::vector<vk::Semaphore> imageAvaliable_;
+    std::vector<vk::Semaphore> imageDrawFinish_;
 
+    int max_flight_count_ = 2;
+    int cur_frame_ = 0;
 
     // glfw setup
     void build_glfw_window();

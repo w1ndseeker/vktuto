@@ -25,7 +25,6 @@ void Engine::Run() {
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
         render();
-        // glfwSwapBuffers(window_);
     }
 
     glfwDestroyWindow(window_);
@@ -34,9 +33,19 @@ void Engine::Run() {
 void Engine::Quit() {
 
     device_.waitIdle();
-    device_.destroySemaphore(imageAvaliable_);
-    device_.destroySemaphore(imageDrawFinish_);
-    device_.destroyFence(cmdAvaliableFence_);
+
+    for(auto& sem : imageAvaliable_){
+        device_.destroySemaphore(sem);
+    }
+
+    for(auto& sem : imageDrawFinish_){
+        device_.destroySemaphore(sem);
+    }
+
+    for(auto& fence : fences_){
+        device_.destroyFence(fence);
+    }
+
     device_.freeCommandBuffers(commandPool_, cmdBuf_);
     device_.destroyCommandPool(commandPool_);
 
@@ -274,8 +283,6 @@ void Engine::CreatePipeline(vk::ShaderModule vertexShader,
                             vk::ShaderModule fragShader) {
 
     vk::GraphicsPipelineCreateInfo info;
-    // info.setPVertexInputState();
-    // info.setPInputAssemblyState();
 
     std::array<vk::PipelineShaderStageCreateInfo, 2> stageInfos;
     stageInfos[0]
@@ -396,24 +403,33 @@ void Engine::allocate_commandbuffer() {
         .setCommandBufferCount(1)
         .setLevel(vk::CommandBufferLevel::ePrimary);
 
-    cmdBuf_ = device_.allocateCommandBuffers(info)[0];
+    cmdBuf_.resize(max_flight_count_);
+
+    for(auto & cmd : cmdBuf_){
+        cmd = device_.allocateCommandBuffers(info)[0];
+    }
 }
 
 void Engine::render() {
 
+    if(device_.waitForFences(fences_[cur_frame_],true,std::numeric_limits<std::uint64_t>::max()) != vk::Result::eSuccess){
+        throw std::runtime_error("wait for fence failed");
+    }
+    device_.resetFences(fences_[cur_frame_]);
+
     auto result = device_.acquireNextImageKHR(
-        swapchain_, std::numeric_limits<uint64_t>::max(),imageAvaliable_);
+        swapchain_, std::numeric_limits<uint64_t>::max(),imageAvaliable_[cur_frame_]);
 
     if (result.result != vk::Result::eSuccess) {
         std::cout << "aquire next image failed!" << std::endl;
     }
 
     auto imageIndex = result.value;
-    cmdBuf_.reset();
+    cmdBuf_[cur_frame_].reset();
 
     vk::CommandBufferBeginInfo begin_info;
     begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    cmdBuf_.begin(begin_info);
+    cmdBuf_[cur_frame_].begin(begin_info);
 
     vk::ClearValue clearValue;
     clearValue.setColor(vk::ClearColorValue(std::array<float, 4>{0.1, 0.1, 0.1, 1}));
@@ -423,27 +439,27 @@ void Engine::render() {
                    .setClearValues(clearValue)
                    .setRenderArea(vk::Rect2D({}, vk::Extent2D(requiredinfo_.extent.width,requiredinfo_.extent.height)));
 
-    cmdBuf_.beginRenderPass(renderPassBegin,{});
-    cmdBuf_.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
-    cmdBuf_.draw(3,1,0,0);
-    cmdBuf_.endRenderPass();
+    cmdBuf_[cur_frame_].beginRenderPass(renderPassBegin,{});
+    cmdBuf_[cur_frame_].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
+    cmdBuf_[cur_frame_].draw(3,1,0,0);
+    cmdBuf_[cur_frame_].endRenderPass();
 
-    cmdBuf_.end();
+    cmdBuf_[cur_frame_].end();
 
-    device_.resetFences(cmdAvaliableFence_);
+    device_.resetFences(fences_[cur_frame_]);
 
     vk::SubmitInfo submit_info;
 
     vk::PipelineStageFlags waitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
-    submit_info.setCommandBuffers(cmdBuf_)
-               .setWaitSemaphores(imageAvaliable_)
-               .setSignalSemaphores(imageDrawFinish_)
+    submit_info.setCommandBuffers(cmdBuf_[cur_frame_])
+               .setWaitSemaphores(imageAvaliable_[cur_frame_])
+               .setSignalSemaphores(imageDrawFinish_[cur_frame_])
                .setWaitDstStageMask(waitStages);
 
-    graphicsQueue_.submit(submit_info, cmdAvaliableFence_);
+    graphicsQueue_.submit(submit_info, fences_[cur_frame_]);
 
-    auto wait_ret = device_.waitForFences(cmdAvaliableFence_, true,
+    auto wait_ret = device_.waitForFences(fences_[cur_frame_], true,
                                           std::numeric_limits<uint64_t>::max());
     if (wait_ret != vk::Result::eSuccess) {
         std::cout << "Fence wait failed!" << std::endl;
@@ -452,7 +468,7 @@ void Engine::render() {
     vk::PresentInfoKHR present_info;
     present_info.setImageIndices(imageIndex)
                 .setSwapchains(swapchain_)
-                .setWaitSemaphores(imageDrawFinish_);
+                .setWaitSemaphores(imageDrawFinish_[cur_frame_]);
 
     auto ret = presentQueue_.presentKHR(present_info);
 
@@ -460,19 +476,33 @@ void Engine::render() {
         std::cout << "present failed!" << std::endl;
     }
 
-
+    cur_frame_ = (cur_frame_ + 1) % max_flight_count_;
 }
 
 void Engine::create_fence() {
     vk::FenceCreateInfo info;
     info.setFlags(vk::FenceCreateFlagBits::eSignaled);
-    cmdAvaliableFence_ = device_.createFence(info);
+    fences_.resize(max_flight_count_);
+
+    for(auto& fence : fences_){
+        fence = device_.createFence(info);
+    }
+
 }
 
 void Engine::create_sems() {
     vk::SemaphoreCreateInfo info;
-    imageAvaliable_ = device_.createSemaphore(info);
-    imageDrawFinish_ = device_.createSemaphore(info);
+
+    imageAvaliable_.resize(max_flight_count_);
+    imageDrawFinish_.resize(max_flight_count_);
+
+    for(auto& sem : imageAvaliable_){
+        sem = device_.createSemaphore(info);
+    }
+
+    for(auto& sem : imageDrawFinish_){
+        sem = device_.createSemaphore(info);
+    }
 
 }
 
