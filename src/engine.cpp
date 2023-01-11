@@ -459,12 +459,6 @@ void Engine::render() {
 
     graphicsQueue_.submit(submit_info, fences_[cur_frame_]);
 
-    auto wait_ret = device_.waitForFences(fences_[cur_frame_], true,
-                                          std::numeric_limits<uint64_t>::max());
-    if (wait_ret != vk::Result::eSuccess) {
-        std::cout << "Fence wait failed!" << std::endl;
-    }
-
     vk::PresentInfoKHR present_info;
     present_info.setImageIndices(imageIndex)
                 .setSwapchains(swapchain_)
