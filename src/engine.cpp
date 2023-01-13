@@ -356,13 +356,13 @@ void Engine::create_renderpass() {
 
     vk::AttachmentDescription attachDesc;
     attachDesc.setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setFormat(requiredinfo_.format.format)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+              .setLoadOp(vk::AttachmentLoadOp::eClear)
+              .setStoreOp(vk::AttachmentStoreOp::eStore)
+              .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+              .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+              .setFormat(requiredinfo_.format.format)
+              .setInitialLayout(vk::ImageLayout::eUndefined)
+              .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
     info.setAttachments(attachDesc);
 
@@ -445,8 +445,6 @@ void Engine::render() {
     cmdBuf_[cur_frame_].endRenderPass();
 
     cmdBuf_[cur_frame_].end();
-
-    device_.resetFences(fences_[cur_frame_]);
 
     vk::SubmitInfo submit_info;
 
