@@ -548,6 +548,8 @@ uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags pro
             return i;
         }
     }
+
+    return 0;
 }
 
 vk::ShaderModule Engine::CreateShaderModule(const char *filename) {
