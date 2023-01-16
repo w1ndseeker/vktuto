@@ -18,6 +18,7 @@ void Engine::Run() {
 
     create_framebuffers();
     create_commandpool();
+    create_vertexbuffer();
     allocate_commandbuffer();
     create_sems();
     create_fence();
@@ -66,6 +67,9 @@ void Engine::Quit() {
     }
 
     device_.destroySwapchainKHR(swapchain_);
+    device_.destroyBuffer(vertexBuffer_);
+    device_.freeMemory(vertexBufferMemory_);
+
     device_.destroy();
     instance_.destroySurfaceKHR(surface_);
     instance_.destroy();
@@ -298,6 +302,12 @@ void Engine::CreatePipeline(vk::ShaderModule vertexShader,
     info.setStages(stageInfos);
 
     vk::PipelineVertexInputStateCreateInfo vertexInput;
+
+    auto bindingDesc = Vertex::getBindingDescription();
+    auto attributeDesc = Vertex::getAttributeDescription();
+    vertexInput.setVertexBindingDescriptions(bindingDesc)
+               .setVertexAttributeDescriptions(attributeDesc);
+
     info.setPVertexInputState(&vertexInput);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAsm;
@@ -441,6 +451,11 @@ void Engine::render() {
 
     cmdBuf_[cur_frame_].beginRenderPass(renderPassBegin,{});
     cmdBuf_[cur_frame_].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_);
+
+    vk::Buffer vertexbuf[] = {vertexBuffer_};
+    vk::DeviceSize offsets[] = {0};
+    cmdBuf_[cur_frame_].bindVertexBuffers(0,vertexbuf,offsets);
+
     cmdBuf_[cur_frame_].draw(3,1,0,0);
     cmdBuf_[cur_frame_].endRenderPass();
 
@@ -496,6 +511,43 @@ void Engine::create_sems() {
         sem = device_.createSemaphore(info);
     }
 
+}
+
+void Engine::create_vertexbuffer(){
+
+    vk::BufferCreateInfo info;
+    info.setSize(sizeof(vertices_[0]) * vertices_.size())
+        .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
+        .setSharingMode(vk::SharingMode::eExclusive);
+
+    vertexBuffer_ = device_.createBuffer(info);
+
+    auto memrequirements = device_.getBufferMemoryRequirements(vertexBuffer_);
+
+    vk::MemoryAllocateInfo allocinfo;
+    allocinfo.setAllocationSize(memrequirements.size)
+             .setMemoryTypeIndex(findMemoryType(memrequirements.memoryTypeBits,vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+
+    vertexBufferMemory_ = device_.allocateMemory(allocinfo);
+
+    device_.bindBufferMemory(vertexBuffer_,vertexBufferMemory_,0);
+
+    void * prt = device_.mapMemory(vertexBufferMemory_,0,memrequirements.size);
+    memcpy(prt,vertices_.data(),info.size);
+    device_.unmapMemory(vertexBufferMemory_);
+}
+
+uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+
+    auto memproperties = physicalDevice_.getMemoryProperties();
+
+    for (uint32_t i = 0; i < memproperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) &&
+            (memproperties.memoryTypes[i].propertyFlags & properties) ==
+                properties) {
+            return i;
+        }
+    }
 }
 
 vk::ShaderModule Engine::CreateShaderModule(const char *filename) {

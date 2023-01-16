@@ -27,6 +27,8 @@
     #include <glfw/glfw3.h>
 #endif
 
+#include <glm/glm.hpp>
+
 #include <iostream>
 #include <vector>
 #include <set>

@@ -31,6 +31,35 @@ class Engine {
         uint32_t image_count;
     };
 
+    struct Vertex {
+        glm::vec2 pos;
+        glm::vec3 color;
+
+        static vk::VertexInputBindingDescription getBindingDescription(){
+            vk::VertexInputBindingDescription bindingDesc;
+            bindingDesc.setBinding(0);
+            bindingDesc.setStride(sizeof(Vertex));
+            bindingDesc.setInputRate(vk::VertexInputRate::eVertex);
+            return bindingDesc;
+        }
+
+        static std::array<vk::VertexInputAttributeDescription,2> getAttributeDescription(){
+            std::array<vk::VertexInputAttributeDescription,2> attributeDesc;
+            attributeDesc[0].setBinding(0);
+            attributeDesc[0].setLocation(0);
+            attributeDesc[0].setFormat(vk::Format::eR32G32Sfloat);
+            attributeDesc[0].setOffset(offsetof(Vertex,pos));
+
+            attributeDesc[1].setBinding(0);
+            attributeDesc[1].setLocation(1);
+            attributeDesc[1].setFormat(vk::Format::eR32G32B32Sfloat);
+            attributeDesc[1].setOffset(offsetof(Vertex,color));
+
+            return attributeDesc;
+        }
+
+    };
+
     // whether to print debug messages in functions
     bool debugMode = true;
 
@@ -79,6 +108,18 @@ class Engine {
     int max_flight_count_ = 2;
     int cur_frame_ = 0;
 
+    const std::vector<Vertex> vertices_ = {
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
+
+    vk::Buffer vertexBuffer_;
+    vk::DeviceMemory vertexBufferMemory_;
+    uint32_t buffer_mem_size_;
+
+    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+
     // glfw setup
     void build_glfw_window();
 
@@ -103,6 +144,8 @@ class Engine {
     void allocate_commandbuffer();
 
     void create_sems();
+
+    void create_vertexbuffer();
 
     void render();
 };
