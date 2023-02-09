@@ -45,15 +45,15 @@ class Engine {
 
         static std::array<vk::VertexInputAttributeDescription,2> getAttributeDescription(){
             std::array<vk::VertexInputAttributeDescription,2> attributeDesc;
-            attributeDesc[0].setBinding(0);
-            attributeDesc[0].setLocation(0);
-            attributeDesc[0].setFormat(vk::Format::eR32G32Sfloat);
-            attributeDesc[0].setOffset(offsetof(Vertex,pos));
+            attributeDesc[0].setBinding(0)
+                            .setLocation(0)
+                            .setFormat(vk::Format::eR32G32Sfloat)
+                            .setOffset(offsetof(Vertex,pos));
 
-            attributeDesc[1].setBinding(0);
-            attributeDesc[1].setLocation(1);
-            attributeDesc[1].setFormat(vk::Format::eR32G32B32Sfloat);
-            attributeDesc[1].setOffset(offsetof(Vertex,color));
+            attributeDesc[1].setBinding(0)
+                            .setLocation(1)
+                            .setFormat(vk::Format::eR32G32B32Sfloat)
+                            .setOffset(offsetof(Vertex,color));
 
             return attributeDesc;
         }
@@ -109,7 +109,7 @@ class Engine {
     int cur_frame_ = 0;
 
     const std::vector<Vertex> vertices_ = {
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
     };
@@ -144,6 +144,13 @@ class Engine {
     void allocate_commandbuffer();
 
     void create_sems();
+
+    void create_buffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                             vk::MemoryPropertyFlags properties,
+                             vk::Buffer &buffer,
+                             vk::DeviceMemory &bufferMemory);
+
+    void copyBuffer(vk::Buffer srcBuffer,vk::Buffer dstBuffer,vk::DeviceSize size);
 
     void create_vertexbuffer();
 
