@@ -196,10 +196,16 @@ void Engine::make_instance() {
     std::array<const char *, 1> layers{"VK_LAYER_KHRONOS_validation"};
     vk::InstanceCreateInfo info;
 
-#ifdef __APPLE__
-    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-    info.setFlags(vk::InstanceCreateFlags(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR));
-#endif
+    // enable VK_KHR_portability_enumeration if device support it
+
+    auto available_extensions = vk::enumerateInstanceExtensionProperties();
+    for (auto &ext : available_extensions) {
+        if (strcmp(ext.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0) {
+            extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+            info.setFlags(vk::InstanceCreateFlags(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR));
+            break;
+        }
+    }
 
     info.setPEnabledExtensionNames(extensions);
     info.setPEnabledLayerNames(layers);
@@ -266,12 +272,16 @@ void Engine::make_device() {
         queueinfos.push_back(dqinfo2);
     }
 
-#ifdef __APPLE__
-    std::array<const char *, 2> subset_ext{"VK_KHR_portability_subset",
-                                           VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-#else
-    std::array<const char *, 1> subset_ext{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-#endif
+    std::vector<const char *> subset_ext{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+    // enable VK_KHR_portability_subset if device support it
+    auto available_extensions = physicalDevice_.enumerateDeviceExtensionProperties();
+    for (auto &ext : available_extensions) {
+        if (strcmp(ext.extensionName, "VK_KHR_portability_subset") == 0) {
+            subset_ext.push_back("VK_KHR_portability_subset");
+            break;
+        }
+    }
 
     vk::DeviceCreateInfo deviceinfo;
     deviceinfo.setPEnabledExtensionNames(subset_ext);
