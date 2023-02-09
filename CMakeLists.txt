@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+
+if (WIN32)
+    set(CMAKE_TOOLCHAIN_FILE F:/sdk/vcpkg/scripts/buildsystems/vcpkg.cmake)
+endif()
+
 project(vktuto)
 
 set(CMAKE_CXX_STANDARD 17)
