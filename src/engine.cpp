@@ -19,6 +19,7 @@ void Engine::Run() {
     create_framebuffers();
     create_commandpool();
     create_vertexbuffer();
+    create_indexbuffer();
     allocate_commandbuffer();
     create_sems();
     create_fence();
@@ -69,6 +70,9 @@ void Engine::Quit() {
     device_.destroySwapchainKHR(swapchain_);
     device_.destroyBuffer(vertexBuffer_);
     device_.freeMemory(vertexBufferMemory_);
+
+    device_.destroyBuffer(indexBuffer_);
+    device_.freeMemory(indexBufferMemory_);
 
     device_.destroy();
     instance_.destroySurfaceKHR(surface_);
@@ -465,8 +469,9 @@ void Engine::render() {
     vk::Buffer vertexbuf[] = {vertexBuffer_};
     vk::DeviceSize offsets[] = {0};
     cmdBuf_[cur_frame_].bindVertexBuffers(0,vertexbuf,offsets);
+    cmdBuf_[cur_frame_].bindIndexBuffer(indexBuffer_,0,vk::IndexType::eUint16);
 
-    cmdBuf_[cur_frame_].draw(3,1,0,0);
+    cmdBuf_[cur_frame_].drawIndexed(static_cast<uint32_t>(indices_.size()),1,0,0,0);
     cmdBuf_[cur_frame_].endRenderPass();
 
     cmdBuf_[cur_frame_].end();
@@ -603,6 +608,34 @@ void Engine::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSi
     graphicsQueue_.waitIdle();
 
     device_.freeCommandBuffers(commandPool_,cmdBuf);
+}
+
+void Engine::create_indexbuffer() {
+    vk::DeviceSize bufferSize = sizeof(indices_[0]) * indices_.size();
+
+    vk::Buffer stagingBuffer;
+    vk::DeviceMemory stagingBufferMemory;
+
+    create_buffer(bufferSize,
+                  vk::BufferUsageFlagBits::eTransferSrc,
+                  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                  stagingBuffer,
+                  stagingBufferMemory);
+
+    void *data = device_.mapMemory(stagingBufferMemory,0,bufferSize);
+    memcpy(data,indices_.data(),bufferSize);
+    device_.unmapMemory(stagingBufferMemory);
+
+    create_buffer(bufferSize,
+                  vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+                  vk::MemoryPropertyFlagBits::eDeviceLocal,
+                  indexBuffer_,
+                  indexBufferMemory_);
+
+    copyBuffer(stagingBuffer,indexBuffer_,bufferSize);
+
+    device_.destroyBuffer(stagingBuffer);
+    device_.freeMemory(stagingBufferMemory);
 }
 
 uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {

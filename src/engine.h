@@ -109,13 +109,22 @@ class Engine {
     int cur_frame_ = 0;
 
     const std::vector<Vertex> vertices_ = {
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
+
+    const std::vector<uint16_t> indices_ = {
+        0, 1, 2, 2, 3, 0
     };
 
     vk::Buffer vertexBuffer_;
     vk::DeviceMemory vertexBufferMemory_;
+
+    vk::Buffer indexBuffer_;
+    vk::DeviceMemory indexBufferMemory_;
+
     uint32_t buffer_mem_size_;
 
     uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
@@ -153,6 +162,8 @@ class Engine {
     void copyBuffer(vk::Buffer srcBuffer,vk::Buffer dstBuffer,vk::DeviceSize size);
 
     void create_vertexbuffer();
+
+    void create_indexbuffer();
 
     void render();
 };
